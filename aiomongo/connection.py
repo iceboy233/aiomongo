@@ -236,6 +236,9 @@ class Connection:
         while True:
             try:
                 await self._read_loop_step()
+            except asyncio.CancelledError:
+                self._shut_down()
+                return
             except Exception as e:
                 self.__connected.clear()
                 connection_error = ConnectionFailure('Connection was lost due to: {}'.format(str(e)))
@@ -247,9 +250,6 @@ class Connection:
                     await self.reconnect()
                 except asyncio.CancelledError:
                     self._shut_down()
-                return
-            except asyncio.CancelledError:
-                self._shut_down()
                 return
 
     def _shut_down(self) -> None:
