@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import socket
 import struct
 from typing import List, MutableMapping, Optional, Union
 
@@ -64,6 +65,9 @@ class Connection:
             self.reader, self.writer = await asyncio.open_connection(
                 host=self.host, port=self.port, loop=self.loop
             )
+
+        sock = self.writer.transport.get_extra_info('socket')
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, int(self.options.pool_options.socket_keepalive))
 
         if self.host.startswith('/'):
             endpoint = self.host
@@ -232,7 +236,7 @@ class Connection:
         while True:
             try:
                 await self._read_loop_step()
-            except (EOFError, ProtocolError) as e:
+            except Exception as e:
                 self.__connected.clear()
                 connection_error = ConnectionFailure('Connection was lost due to: {}'.format(str(e)))
                 self.close(error=connection_error)
