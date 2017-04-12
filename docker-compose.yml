@@ -1,4 +1,4 @@
- version: '2'
+ version: '3.1'
  services:
    db:
      image: mongo:3.2
@@ -15,6 +15,17 @@
      working_dir: /opt/project
      environment:
        - MONGO_HOST=db
+       - PYTHONPATH=/opt/project
+
+   aiomongo_run:
+     build:
+       context: .
+     image: aiomongo
+     command: python run.py
+     volumes:
+       - .:/opt/project
+     working_dir: /opt/project
+     environment:
        - PYTHONPATH=/opt/project
 
    benchmarks:
