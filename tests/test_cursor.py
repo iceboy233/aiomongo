@@ -494,7 +494,7 @@ class TestCursor:
 
         if mongo_version.at_least(3, 3, 2):
             assert 0 == await collection.find().hint('x_1').count()
-            assert 0 == await collection.find().hint([('x' == 1)]).count()
+            assert 0 == await collection.find().hint([('x', 1)]).count()
         else:
             assert 2 == await collection.find().hint('x_1').count()
             assert 2 == await collection.find().hint([('x', 1)]).count()
