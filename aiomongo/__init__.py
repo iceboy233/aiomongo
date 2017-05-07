@@ -5,6 +5,7 @@ from .client import AioMongoClient
 from .collection import Collection
 from .connection import Connection
 from .database import Database
+from .gridfs import GridFS
 
 
 async def create_client(uri: str, loop: Optional[asyncio.AbstractEventLoop] = None) -> AioMongoClient:
@@ -16,4 +17,4 @@ async def create_client(uri: str, loop: Optional[asyncio.AbstractEventLoop] = No
 
     return cl
 
-__all__ = ['AioMongoClient', 'Collection', 'Connection', 'Database']
+__all__ = ['AioMongoClient', 'Collection', 'Connection', 'Database', 'GridFS']
