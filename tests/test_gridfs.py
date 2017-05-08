@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import pytest
 
@@ -105,11 +104,9 @@ class TestGridFs:
     @pytest.mark.asyncio
     async def test_get_last_version(self, test_fs):
         one = await test_fs.put(b'foo', filename='test')
-        await asyncio.sleep(0.01)
         two = test_fs.new_file(filename='test')
         await two.write(b'bar')
         await two.close()
-        await asyncio.sleep(0.01)
         two = two._id
         three = await test_fs.put(b'baz', filename='test')
 
@@ -121,3 +118,28 @@ class TestGridFs:
         await test_fs.delete(one)
         with pytest.raises(NoFile):
             await test_fs.get_last_version('test')
+
+    @pytest.mark.asyncio
+    async def test_get_last_version_with_metadata(self, test_fs):
+        one = await test_fs.put(b'foo', filename='test', author='author')
+        two = await test_fs.put(b'bar', filename='test', author='author')
+
+        assert b'bar' == await (await test_fs.get_last_version(author='author')).read()
+        await test_fs.delete(two)
+        assert b'foo' == await (await test_fs.get_last_version(author='author')).read()
+        await test_fs.delete(one)
+
+        one = await test_fs.put(b'foo', filename='test', author='author1')
+        two = await test_fs.put(b'bar', filename='test', author='author2')
+
+        assert b'foo' == await (await test_fs.get_last_version(author='author1')).read()
+        assert b'bar' == await (await test_fs.get_last_version(author='author2')).read()
+        assert b'bar' == await (await test_fs.get_last_version(filename='test')).read()
+
+        with pytest.raises(NoFile):
+            await test_fs.get_last_version(author='author3')
+        with pytest.raises(NoFile):
+            await test_fs.get_last_version(filename='nottest', author='author1')
+
+        await test_fs.delete(one)
+        await test_fs.delete(two)
