@@ -299,3 +299,13 @@ class TestGridFs:
         assert b'test1' == await (await test_fs.find_one({'filename': 'file1'})).read()
 
         assert 'data' == (await test_fs.find_one(id2)).meta
+
+    @pytest.mark.asyncio
+    async def test_grid_in_non_int_chunksize(self, test_db, test_fs):
+        # Lua, and perhaps other buggy GridFS clients, store size as a float.
+        data = b'data'
+        await test_fs.put(data, filename='f')
+        await test_db.fs.files.update_one({'filename': 'f'},
+                                          {'$set': {'chunkSize': 100.0}})
+
+        assert data == await (await test_fs.get_version('f')).read()
