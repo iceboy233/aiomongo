@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import pytest
 
@@ -100,3 +101,23 @@ class TestGridFs:
         assert any(
             info.get('key') == [('filename', 1), ('uploadDate', 1)]
             for info in (await files.index_information()).values())
+
+    @pytest.mark.asyncio
+    async def test_get_last_version(self, test_fs):
+        one = await test_fs.put(b'foo', filename='test')
+        await asyncio.sleep(0.01)
+        two = test_fs.new_file(filename='test')
+        await two.write(b'bar')
+        await two.close()
+        await asyncio.sleep(0.01)
+        two = two._id
+        three = await test_fs.put(b'baz', filename='test')
+
+        assert b'baz' == await (await test_fs.get_last_version('test')).read()
+        await test_fs.delete(three)
+        assert b'bar' == await (await test_fs.get_last_version('test')).read()
+        await test_fs.delete(two)
+        assert b'foo' == await (await test_fs.get_last_version('test')).read()
+        await test_fs.delete(one)
+        with pytest.raises(NoFile):
+            await test_fs.get_last_version('test')

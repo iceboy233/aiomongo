@@ -1,5 +1,6 @@
 from typing import Any, BinaryIO, List, Union
 
+from gridfs.errors import NoFile
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import ConfigurationError
 
@@ -16,6 +17,24 @@ class GridFS:
         self.__collection = database[collection]
         self.__files = self.__collection.files
         self.__chunks = self.__collection.chunks
+
+    def new_file(self, **kwargs):
+        """Create a new file in GridFS.
+
+        Returns a new :class:`~gridfs.grid_file.GridIn` instance to
+        which data can be written. Any keyword arguments will be
+        passed through to :meth:`~gridfs.grid_file.GridIn`.
+
+        If the ``"_id"`` of the file is manually specified, it must
+        not already exist in GridFS. Otherwise
+        :class:`~gridfs.errors.FileExists` is raised.
+
+        :Parameters:
+          - `**kwargs` (optional): keyword arguments for file creation
+        """
+        # No need for __ensure_index_files_id() here; GridIn ensures
+        # the (files_id, n) index when needed.
+        return GridIn(self.__collection, **kwargs)
 
     async def put(self, data: Union[bytes, BinaryIO], **kwargs) -> GridIn:
         """Put data in GridFS as a new file.
@@ -94,9 +113,6 @@ class GridFS:
           - `version` (optional): version of the file to get (defaults
             to -1, the most recent version uploaded)
           - `**kwargs` (optional): find files by custom metadata.
-
-        .. versionchanged:: 3.1
-           ``get_version`` no longer ensures indexes.
         """
         query = kwargs
         if filename is not None:
@@ -108,11 +124,9 @@ class GridFS:
             cursor.limit(-1).skip(skip).sort('uploadDate', DESCENDING)
         else:
             cursor.limit(-1).skip(version).sort('uploadDate', ASCENDING)
-        try:
-            grid_file = next(cursor)
+        async for grid_file in cursor:
             return GridOut(self.__collection, file_document=grid_file)
-        except StopIteration:
-            raise NoFile('no version %d for filename %r' % (version, filename))
+        raise NoFile('no version %d for filename %r' % (version, filename))
 
     async def get_last_version(self, filename=None, **kwargs):
         """Get the most recent version of a file in GridFS by ``"filename"``
@@ -125,7 +139,7 @@ class GridFS:
           - `filename`: ``"filename"`` of the file to get, or `None`
           - `**kwargs` (optional): find files by custom metadata.
         """
-        return self.get_version(filename=filename, **kwargs)
+        return await self.get_version(filename=filename, **kwargs)
 
     async def delete(self, file_id: Any) -> None:
         """Delete a file from GridFS by ``"_id"``.
