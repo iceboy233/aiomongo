@@ -83,3 +83,20 @@ class TestGridFs:
                 await out.readline()
         finally:
             await test_fs.delete(files_id)
+
+    @pytest.mark.asyncio
+    async def test_put_ensures_index(self, test_db, test_fs):
+        # setUp has dropped collections.
+        names = await test_db.collection_names()
+        assert not [name for name in names if name.startswith('fs')]
+
+        chunks = test_db.fs.chunks
+        files = test_db.fs.files
+        await test_fs.put(b'junk')
+
+        assert any(
+            info.get('key') == [('files_id', 1), ('n', 1)]
+            for info in (await chunks.index_information()).values())
+        assert any(
+            info.get('key') == [('filename', 1), ('uploadDate', 1)]
+            for info in (await files.index_information()).values())
