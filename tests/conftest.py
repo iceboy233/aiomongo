@@ -29,6 +29,13 @@ def test_db(event_loop, mongo):
 
 
 @pytest.fixture(scope='function')
+def test_fs(event_loop, test_db):
+    event_loop.run_until_complete(test_db.drop_collection('fs.files'))
+    event_loop.run_until_complete(test_db.drop_collection('fs.chunks'))
+    return aiomongo.GridFS(test_db)
+
+
+@pytest.fixture(scope='function')
 def mongo_version(event_loop, mongo):
     server_info = event_loop.run_until_complete(
         mongo.server_info()
@@ -36,5 +43,3 @@ def mongo_version(event_loop, mongo):
     if 'versionArray' in server_info:
         return Version.from_version_array(server_info['versionArray'])
     return Version.from_string(server_info['version'])
-
-
