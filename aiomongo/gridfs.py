@@ -36,7 +36,7 @@ class GridFS:
         # the (files_id, n) index when needed.
         return GridIn(self.__collection, **kwargs)
 
-    async def put(self, data: Union[bytes, BinaryIO], **kwargs) -> GridIn:
+    async def put(self, data: Union[bytes, str, BinaryIO], **kwargs) -> GridIn:
         """Put data in GridFS as a new file.
 
         Equivalent to doing::

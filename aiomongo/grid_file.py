@@ -3,6 +3,7 @@ import math
 from hashlib import md5
 from io import BytesIO
 from os import SEEK_SET, SEEK_CUR, SEEK_END
+from typing import BinaryIO, List, Union
 
 from bson import ObjectId
 from bson.binary import Binary
@@ -197,7 +198,7 @@ class GridIn:
             await self.__flush()
             object.__setattr__(self, '_closed', True)
 
-    async def write(self, data):
+    async def write(self, data: Union[bytes, str, BinaryIO]) -> None:
         """Write data to the file. There is no return value.
 
         `data` can be either a string of bytes or a file-like object
@@ -256,7 +257,7 @@ class GridIn:
             to_write = read(self.chunk_size)
         self._buffer.write(to_write)
 
-    async def writelines(self, sequence):
+    async def writelines(self, sequence: List[Union[bytes, str]]) -> None:
         """Write a sequence of strings to the file.
 
         Does not add seperators.

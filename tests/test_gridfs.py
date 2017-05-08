@@ -1,5 +1,6 @@
 import datetime
 import pytest
+from io import BytesIO
 
 from bson.binary import Binary
 from gridfs.errors import CorruptGridFile, NoFile
@@ -185,3 +186,9 @@ class TestGridFs:
         await test_fs.delete(one)
         await test_fs.delete(two)
         await test_fs.delete(three)
+
+    @pytest.mark.asyncio
+    async def test_put_filelike(self, test_db, test_fs):
+        oid = await test_fs.put(BytesIO(b'hello world'), chunk_size=1)
+        assert 11 == await test_db.fs.chunks.count()
+        assert b'hello world' == await (await test_fs.get(oid)).read()
