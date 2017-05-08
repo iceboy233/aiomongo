@@ -1,10 +1,11 @@
-from typing import Any, BinaryIO, List, Union
+from collections import Mapping
+from typing import Any, BinaryIO, List, Optional, Union
 
 from gridfs.errors import NoFile
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import ConfigurationError
 
-from .grid_file import GridIn, GridOut
+from .grid_file import GridIn, GridOut, GridOutCursor
 
 
 class GridFS:
@@ -170,6 +171,90 @@ class GridFS:
         return [
             name for name in await self.__files.distinct('filename')
             if name is not None]
+
+    async def find_one(self, filter=None, *args, **kwargs) -> Optional[GridOut]:
+        """Get a single file from gridfs.
+
+        All arguments to :meth:`find` are also valid arguments for
+        :meth:`find_one`, although any `limit` argument will be
+        ignored. Returns a single :class:`~gridfs.grid_file.GridOut`,
+        or ``None`` if no matching file is found. For example::
+
+            file = fs.find_one({"filename": "lisa.txt"})
+
+        :Parameters:
+          - `filter` (optional): a dictionary specifying
+            the query to be performing OR any other type to be used as
+            the value for a query for ``"_id"`` in the file collection.
+          - `*args` (optional): any additional positional arguments are
+            the same as the arguments to :meth:`find`.
+          - `**kwargs` (optional): any additional keyword arguments
+            are the same as the arguments to :meth:`find`.
+        """
+        if filter is not None and not isinstance(filter, Mapping):
+            filter = {'_id': filter}
+
+        async for f in self.find(filter, *args, **kwargs):
+            return f
+
+        return None
+
+    def find(self, *args, **kwargs) -> GridOutCursor:
+        """Query GridFS for files.
+
+        Returns a cursor that iterates across files matching
+        arbitrary queries on the files collection. Can be combined
+        with other modifiers for additional control. For example::
+
+          for grid_out in fs.find({"filename": "lisa.txt"},
+                                  no_cursor_timeout=True):
+              data = grid_out.read()
+
+        would iterate through all versions of "lisa.txt" stored in GridFS.
+        Note that setting no_cursor_timeout to True may be important to
+        prevent the cursor from timing out during long multi-file processing
+        work.
+
+        As another example, the call::
+
+          most_recent_three = fs.find().sort("uploadDate", -1).limit(3)
+
+        would return a cursor to the three most recently uploaded files
+        in GridFS.
+
+        Follows a similar interface to
+        :meth:`~pymongo.collection.Collection.find`
+        in :class:`~pymongo.collection.Collection`.
+
+        :Parameters:
+          - `filter` (optional): a SON object specifying elements which
+            must be present for a document to be included in the
+            result set
+          - `skip` (optional): the number of files to omit (from
+            the start of the result set) when returning the results
+          - `limit` (optional): the maximum number of results to
+            return
+          - `no_cursor_timeout` (optional): if False (the default), any
+            returned cursor is closed by the server after 10 minutes of
+            inactivity. If set to True, the returned cursor will never
+            time out on the server. Care should be taken to ensure that
+            cursors with no_cursor_timeout turned on are properly closed.
+          - `sort` (optional): a list of (key, direction) pairs
+            specifying the sort order for this query. See
+            :meth:`~pymongo.cursor.Cursor.sort` for details.
+
+        Raises :class:`TypeError` if any of the arguments are of
+        improper type. Returns an instance of
+        :class:`~gridfs.grid_file.GridOutCursor`
+        corresponding to this query.
+
+        .. versionchanged:: 3.0
+           Removed the read_preference, tag_sets, and
+           secondary_acceptable_latency_ms options.
+        .. versionadded:: 2.7
+        .. mongodoc:: find
+        """
+        return GridOutCursor(self.__collection, *args, **kwargs)
 
     async def exists(self, document_or_id=None, **kwargs):
         """Check if a file exists in this instance of :class:`GridFS`.

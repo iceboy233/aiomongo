@@ -261,3 +261,41 @@ class TestGridFs:
             return True
 
         assert await iterate_file(f)
+
+    @pytest.mark.asyncio
+    async def test_gridfs_find(self, test_fs):
+        await test_fs.put(b'test2', filename='two')
+        await test_fs.put(b'test2+', filename='two')
+        await test_fs.put(b'test1', filename='one')
+        await test_fs.put(b'test2++', filename='two')
+        assert 3 == await test_fs.find({'filename': 'two'}).count()
+        assert 4 == await test_fs.find().count()
+        cursor = test_fs.find(
+            no_cursor_timeout=False).sort('uploadDate', -1).skip(1).limit(2)
+        gout = await cursor.__anext__()
+        assert b'test1' == await gout.read()
+        cursor.rewind()
+        gout = await cursor.__anext__()
+        assert b'test1' == await gout.read()
+        gout = await cursor.__anext__()
+        assert b'test2+' == await gout.read()
+        with pytest.raises(StopAsyncIteration):
+            await cursor.__anext__()
+        await cursor.close()
+        with pytest.raises(TypeError):
+            test_fs.find({}, {'_id': True})
+
+    @pytest.mark.asyncio
+    async def test_gridfs_find_one(self, test_fs):
+        assert None == await test_fs.find_one()
+
+        id1 = await test_fs.put(b'test1', filename='file1')
+        assert b'test1' == await (await test_fs.find_one()).read()
+
+        id2 = await test_fs.put(b'test2', filename='file2', meta='data')
+        assert b'test1' == await (await test_fs.find_one(id1)).read()
+        assert b'test2' == await (await test_fs.find_one(id2)).read()
+
+        assert b'test1' == await (await test_fs.find_one({'filename': 'file1'})).read()
+
+        assert 'data' == (await test_fs.find_one(id2)).meta
