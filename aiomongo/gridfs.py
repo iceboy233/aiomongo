@@ -87,7 +87,7 @@ class GridFS:
         await gout._ensure_file()
         return gout
 
-    async def get_version(self, filename=None, version=-1, **kwargs):
+    async def get_version(self, filename=None, version=-1, **kwargs) -> GridOut:
         """Get a file from GridFS by ``"filename"`` or metadata fields.
 
         Returns a version of the file in GridFS whose filename matches
@@ -128,7 +128,7 @@ class GridFS:
             return GridOut(self.__collection, file_document=grid_file)
         raise NoFile('no version %d for filename %r' % (version, filename))
 
-    async def get_last_version(self, filename=None, **kwargs):
+    async def get_last_version(self, filename=None, **kwargs) -> GridOut:
         """Get the most recent version of a file in GridFS by ``"filename"``
         or metadata fields.
 

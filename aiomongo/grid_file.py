@@ -265,20 +265,17 @@ class GridIn:
         for line in sequence:
             await self.write(line)
 
-    def __enter__(self):
+    async def __aenter__(self) -> 'GridIn':
         """Support for the context manager protocol.
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, *exc) -> None:
         """Support for the context manager protocol.
 
         Close the file and allow exceptions to propagate.
         """
-        self.close()
-
-        # propagate exceptions
-        return False
+        await self.close()
 
 
 def _grid_out_property(field_name, docstring):
@@ -463,7 +460,7 @@ class GridOut:
         self.__position = new_pos
         self.__buffer = EMPTY
 
-    def __iter__(self):
+    async def __aiter__(self) -> 'GridOutIterator':
         """Return an iterator over all of this file's data.
 
         The iterator will return chunk-sized instances of
@@ -477,20 +474,17 @@ class GridOut:
         """Make GridOut more generically file-like."""
         pass
 
-    def __enter__(self):
+    async def __aenter__(self) -> 'GridOut':
         """Makes it possible to use :class:`GridOut` files
         with the context manager protocol.
         """
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Makes it possible to use :class:`GridOut` files
-        with the context manager protocol.
-        """
-        return False
+    async def __aexit__(self, *exc) -> None:
+        pass
 
 
-class GridOutIterator(object):
+class GridOutIterator:
     def __init__(self, grid_out, chunks):
         self.__id = grid_out._id
         self.__chunks = chunks
@@ -498,12 +492,12 @@ class GridOutIterator(object):
         self.__max_chunk = math.ceil(float(grid_out.length) /
                                      grid_out.chunk_size)
 
-    def __iter__(self):
+    async def __aiter__(self) -> 'GridOutIterator':
         return self
 
     async def next(self):
         if self.__current_chunk >= self.__max_chunk:
-            raise StopIteration
+            raise StopAsyncIteration
         chunk = await self.__chunks.find_one({'files_id': self.__id,
                                               'n': self.__current_chunk})
         if not chunk:
@@ -511,4 +505,4 @@ class GridOutIterator(object):
         self.__current_chunk += 1
         return bytes(chunk['data'])
 
-    __next__ = next
+    __anext__ = next

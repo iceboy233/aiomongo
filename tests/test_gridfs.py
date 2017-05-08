@@ -245,3 +245,19 @@ class TestGridFs:
         oid = await test_fs.put(u'aé', encoding='iso-8859-1')
         assert u'aé'.encode('iso-8859-1') == await (await test_fs.get(oid)).read()
         assert 'iso-8859-1' == (await test_fs.get(oid)).encoding
+
+    @pytest.mark.asyncio
+    async def test_missing_length_iter(self, test_db, test_fs):
+        # Test fix that guards against PHP-237
+        await test_fs.put(b'', filename='empty')
+        doc = await test_db.fs.files.find_one({'filename': 'empty'})
+        doc.pop('length')
+        await test_db.fs.files.replace_one({'_id': doc['_id']}, doc)
+        f = await test_fs.get_last_version(filename='empty')
+
+        async def iterate_file(grid_file):
+            async for chunk in grid_file:
+                pass
+            return True
+
+        assert await iterate_file(f)
