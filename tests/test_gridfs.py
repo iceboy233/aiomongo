@@ -232,3 +232,16 @@ class TestGridFs:
         assert not await test_fs.exists({'foo': 13})
         assert not await test_fs.exists(foo={'$gt': 12})
         assert not await test_fs.exists({'foo': {'$gt': 12}})
+
+    @pytest.mark.asyncio
+    async def test_put_unicode(self, test_fs):
+        with pytest.raises(TypeError):
+            await test_fs.put(u'hello')
+
+        oid = await test_fs.put(u'hello', encoding='utf-8')
+        assert b'hello' == await (await test_fs.get(oid)).read()
+        assert 'utf-8' == (await test_fs.get(oid)).encoding
+
+        oid = await test_fs.put(u'aé', encoding='iso-8859-1')
+        assert u'aé'.encode('iso-8859-1') == await (await test_fs.get(oid)).read()
+        assert 'iso-8859-1' == (await test_fs.get(oid)).encoding
