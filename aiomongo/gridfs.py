@@ -18,7 +18,7 @@ class GridFS:
         self.__files = self.__collection.files
         self.__chunks = self.__collection.chunks
 
-    def new_file(self, **kwargs):
+    async def new_file(self, **kwargs):
         """Create a new file in GridFS.
 
         Returns a new :class:`~gridfs.grid_file.GridIn` instance to
@@ -170,3 +170,40 @@ class GridFS:
         return [
             name for name in await self.__files.distinct('filename')
             if name is not None]
+
+    async def exists(self, document_or_id=None, **kwargs):
+        """Check if a file exists in this instance of :class:`GridFS`.
+
+        The file to check for can be specified by the value of its
+        ``_id`` key, or by passing in a query document. A query
+        document can be passed in as dictionary, or by using keyword
+        arguments. Thus, the following three calls are equivalent:
+
+        >>> fs.exists(file_id)
+        >>> fs.exists({'_id': file_id})
+        >>> fs.exists(_id=file_id)
+
+        As are the following two calls:
+
+        >>> fs.exists({'filename': 'mike.txt'})
+        >>> fs.exists(filename='mike.txt')
+
+        And the following two:
+
+        >>> fs.exists({'foo': {'$gt': 12}})
+        >>> fs.exists(foo={'$gt': 12})
+
+        Returns ``True`` if a matching file exists, ``False``
+        otherwise. Calls to :meth:`exists` will not automatically
+        create appropriate indexes; application developers should be
+        sure to create indexes if needed and as appropriate.
+
+        :Parameters:
+          - `document_or_id` (optional): query document, or _id of the
+            document to check for
+          - `**kwargs` (optional): keyword arguments are used as a
+            query document, if they're present.
+        """
+        if kwargs:
+            return await self.__files.find_one(kwargs, ['_id']) is not None
+        return await self.__files.find_one(document_or_id, ['_id']) is not None

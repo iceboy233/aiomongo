@@ -3,7 +3,7 @@ import pytest
 from io import BytesIO
 
 from bson.binary import Binary
-from gridfs.errors import CorruptGridFile, NoFile
+from gridfs.errors import CorruptGridFile, FileExists, NoFile
 
 
 class TestGridFs:
@@ -105,7 +105,7 @@ class TestGridFs:
     @pytest.mark.asyncio
     async def test_get_last_version(self, test_fs):
         one = await test_fs.put(b'foo', filename='test')
-        two = test_fs.new_file(filename='test')
+        two = await test_fs.new_file(filename='test')
         await two.write(b'bar')
         await two.close()
         two = two._id
@@ -192,3 +192,43 @@ class TestGridFs:
         oid = await test_fs.put(BytesIO(b'hello world'), chunk_size=1)
         assert 11 == await test_db.fs.chunks.count()
         assert b'hello world' == await (await test_fs.get(oid)).read()
+
+    @pytest.mark.asyncio
+    async def test_file_exists(self, test_fs):
+        oid = await test_fs.put(b'hello')
+        with pytest.raises(FileExists):
+            await test_fs.put(b'world', _id=oid)
+
+        one = await test_fs.new_file(_id=123)
+        await one.write(b'some content')
+        await one.close()
+
+        two = await test_fs.new_file(_id=123)
+        with pytest.raises(FileExists):
+            await two.write(b'x' * 262146)
+
+    @pytest.mark.asyncio
+    async def test_exists(self, test_fs):
+        oid = await test_fs.put(b'hello')
+        assert await test_fs.exists(oid)
+        assert await test_fs.exists({'_id': oid})
+        assert await test_fs.exists(_id=oid)
+
+        assert not await test_fs.exists(filename='mike')
+        assert not await test_fs.exists('mike')
+
+        oid = await test_fs.put(b'hello', filename='mike', foo=12)
+        assert await test_fs.exists(oid)
+        assert await test_fs.exists({'_id': oid})
+        assert await test_fs.exists(_id=oid)
+        assert await test_fs.exists(filename='mike')
+        assert await test_fs.exists({'filename': 'mike'})
+        assert await test_fs.exists(foo=12)
+        assert await test_fs.exists({'foo': 12})
+        assert await test_fs.exists(foo={'$gt': 11})
+        assert await test_fs.exists({'foo': {'$gt': 11}})
+
+        assert not await test_fs.exists(foo=13)
+        assert not await test_fs.exists({'foo': 13})
+        assert not await test_fs.exists(foo={'$gt': 12})
+        assert not await test_fs.exists({'foo': {'$gt': 12}})

@@ -7,7 +7,7 @@ from typing import BinaryIO, List, Union
 
 from bson import ObjectId
 from bson.binary import Binary
-from gridfs.errors import CorruptGridFile, NoFile
+from gridfs.errors import CorruptGridFile, FileExists, NoFile
 from gridfs.grid_file import _C_INDEX, _F_INDEX, DEFAULT_CHUNK_SIZE, EMPTY, NEWLN
 from pymongo import ReadPreference
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure
