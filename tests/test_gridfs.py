@@ -143,3 +143,45 @@ class TestGridFs:
 
         await test_fs.delete(one)
         await test_fs.delete(two)
+
+    @pytest.mark.asyncio
+    async def test_get_version(self, test_fs):
+        await test_fs.put(b'foo', filename='test')
+        await test_fs.put(b'bar', filename='test')
+        await test_fs.put(b'baz', filename='test')
+
+        assert b'foo' == await (await test_fs.get_version('test', 0)).read()
+        assert b'bar' == await (await test_fs.get_version('test', 1)).read()
+        assert b'baz' == await (await test_fs.get_version('test', 2)).read()
+
+        assert b'baz' == await (await test_fs.get_version('test', -1)).read()
+        assert b'bar' == await (await test_fs.get_version('test', -2)).read()
+        assert b'foo' == await (await test_fs.get_version('test', -3)).read()
+
+        with pytest.raises(NoFile):
+            await test_fs.get_version('test', 3)
+        with pytest.raises(NoFile):
+            await test_fs.get_version('test', -4)
+
+    @pytest.mark.asyncio
+    async def test_get_version_with_metadata(self, test_fs):
+        one = await test_fs.put(b'foo', filename='test', author='author1')
+        two = await test_fs.put(b'bar', filename='test', author='author1')
+        three = await test_fs.put(b'baz', filename='test', author='author2')
+
+        assert b'foo' == await (await test_fs.get_version(filename='test', author='author1', version=-2)).read()
+        assert b'bar' == await (await test_fs.get_version(filename='test', author='author1', version=-1)).read()
+        assert b'foo' == await (await test_fs.get_version(filename='test', author='author1', version=0)).read()
+        assert b'bar' == await (await test_fs.get_version(filename='test', author='author1', version=1)).read()
+        assert b'baz' == await (await test_fs.get_version(filename='test', author='author2', version=0)).read()
+        assert b'baz' == await (await test_fs.get_version(filename='test', version=-1)).read()
+        assert b'baz' == await (await test_fs.get_version(filename='test', version=2)).read()
+
+        with pytest.raises(NoFile):
+            await test_fs.get_version(filename='test', author='author3')
+        with pytest.raises(NoFile):
+            await test_fs.get_version(filename='test', author='author1', version=2)
+
+        await test_fs.delete(one)
+        await test_fs.delete(two)
+        await test_fs.delete(three)
