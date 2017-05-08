@@ -1,6 +1,8 @@
 import datetime
 import pytest
-from gridfs.errors import NoFile
+
+from bson.binary import Binary
+from gridfs.errors import CorruptGridFile, NoFile
 
 
 class TestGridFs:
@@ -65,3 +67,19 @@ class TestGridFs:
         assert isinstance(raw['uploadDate'], datetime.datetime)
         assert 255 * 1024 == raw['chunkSize']
         assert isinstance(raw['md5'], str)
+
+    @pytest.mark.asyncio
+    async def test_corrupt_chunk(self, test_db, test_fs):
+        files_id = await test_fs.put(b'foobar')
+        await test_db.fs.chunks.update_one({'files_id': files_id},
+                                           {'$set': {'data': Binary(b'foo', 0)}})
+        try:
+            out = await test_fs.get(files_id)
+            with pytest.raises(CorruptGridFile):
+                await out.read()
+
+            out = await test_fs.get(files_id)
+            with pytest.raises(CorruptGridFile):
+                await out.readline()
+        finally:
+            await test_fs.delete(files_id)

@@ -6,8 +6,8 @@ from os import SEEK_SET, SEEK_CUR, SEEK_END
 
 from bson import ObjectId
 from bson.binary import Binary
-from gridfs.errors import NoFile
-from gridfs.grid_file import _C_INDEX, _F_INDEX, DEFAULT_CHUNK_SIZE, EMPTY
+from gridfs.errors import CorruptGridFile, NoFile
+from gridfs.grid_file import _C_INDEX, _F_INDEX, DEFAULT_CHUNK_SIZE, EMPTY, NEWLN
 from pymongo import ReadPreference
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure
 
@@ -396,7 +396,7 @@ class GridOut:
         data.seek(0)
         return data.read(size)
 
-    def readline(self, size=-1):
+    async def readline(self, size=-1):
         """Read one line or up to `size` bytes from the file.
 
         :Parameters:
@@ -410,9 +410,9 @@ class GridOut:
             size = remainder
 
         received = 0
-        data = StringIO()
+        data = BytesIO()
         while received < size:
-            chunk_data = self.readchunk()
+            chunk_data = await self.readchunk()
             pos = chunk_data.find(NEWLN, 0, size)
             if pos != -1:
                 size = received + pos + 1
