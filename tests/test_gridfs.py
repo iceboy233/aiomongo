@@ -25,6 +25,17 @@ class TestGridFs:
         assert b'hello world' == await (await test_fs.get('foo')).read()
 
     @pytest.mark.asyncio
+    async def test_multi_chunk_delete(self, test_db, test_fs):
+        assert 0 == await test_db.fs.files.count()
+        assert 0 == await test_db.fs.chunks.count()
+        oid = await test_fs.put(b'hello', chunkSize=1)
+        assert 1 == await test_db.fs.files.count()
+        assert 5 == await test_db.fs.chunks.count()
+        await test_fs.delete(oid)
+        assert 0 == await test_db.fs.files.count()
+        assert 0 == await test_db.fs.chunks.count()
+
+    @pytest.mark.asyncio
     async def test_list(self, test_fs):
         assert [] == await test_fs.list()
         await test_fs.put(b'hello world')

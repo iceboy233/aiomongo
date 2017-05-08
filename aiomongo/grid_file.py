@@ -197,7 +197,7 @@ class GridIn:
             await self.__flush()
             object.__setattr__(self, '_closed', True)
 
-    def write(self, data):
+    async def write(self, data):
         """Write data to the file. There is no return value.
 
         `data` can be either a string of bytes or a file-like object
@@ -249,20 +249,20 @@ class GridIn:
                 self._buffer.write(to_write)
                 if len(to_write) < space:
                     return  # EOF or incomplete
-            self.__flush_buffer()
+            await self.__flush_buffer()
         to_write = read(self.chunk_size)
         while to_write and len(to_write) == self.chunk_size:
-            self.__flush_data(to_write)
+            await self.__flush_data(to_write)
             to_write = read(self.chunk_size)
         self._buffer.write(to_write)
 
-    def writelines(self, sequence):
+    async def writelines(self, sequence):
         """Write a sequence of strings to the file.
 
         Does not add seperators.
         """
         for line in sequence:
-            self.write(line)
+            await self.write(line)
 
     def __enter__(self):
         """Support for the context manager protocol.

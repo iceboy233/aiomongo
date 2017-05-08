@@ -47,7 +47,7 @@ class GridFS:
         """
         grid_file = GridIn(self.__collection, **kwargs)
         try:
-            grid_file.write(data)
+            await grid_file.write(data)
         finally:
             await grid_file.close()
 
