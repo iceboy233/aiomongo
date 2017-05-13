@@ -275,7 +275,7 @@ class BulkUpsertOperation:
         self.__selector = selector
         self.__bulk = bulk
 
-    def update_one(self, update: dict):
+    def update_one(self, update: dict) -> None:
         """Update one document matching the selector.
 
         :Parameters:
@@ -284,7 +284,7 @@ class BulkUpsertOperation:
         self.__bulk.add_update(self.__selector,
                                update, multi=False, upsert=True)
 
-    def update(self, update: dict):
+    def update(self, update: dict) -> None:
         """Update all documents matching the selector.
 
         :Parameters:
@@ -293,7 +293,7 @@ class BulkUpsertOperation:
         self.__bulk.add_update(self.__selector,
                                update, multi=True, upsert=True)
 
-    def replace_one(self, replacement: dict):
+    def replace_one(self, replacement: dict) -> None:
         """Replace one entire document matching the selector criteria.
 
         :Parameters:
@@ -310,7 +310,7 @@ class BulkWriteOperation:
         self.__selector = selector
         self.__bulk = bulk
 
-    def update_one(self, update: dict):
+    def update_one(self, update: dict) -> None:
         """Update one document matching the selector criteria.
 
         :Parameters:
@@ -318,7 +318,7 @@ class BulkWriteOperation:
         """
         self.__bulk.add_update(self.__selector, update, multi=False)
 
-    def update(self, update: dict):
+    def update(self, update: dict) -> None:
         """Update all documents matching the selector criteria.
 
         :Parameters:
@@ -326,7 +326,7 @@ class BulkWriteOperation:
         """
         self.__bulk.add_update(self.__selector, update, multi=True)
 
-    def replace_one(self, replacement: dict):
+    def replace_one(self, replacement: dict) -> None:
         """Replace one entire document matching the selector criteria.
 
         :Parameters:
@@ -334,17 +334,17 @@ class BulkWriteOperation:
         """
         self.__bulk.add_replace(self.__selector, replacement)
 
-    def remove_one(self):
+    def remove_one(self) -> None:
         """Remove a single document matching the selector criteria.
         """
         self.__bulk.add_delete(self.__selector, _DELETE_ONE)
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove all documents matching the selector criteria.
         """
         self.__bulk.add_delete(self.__selector, _DELETE_ALL)
 
-    def upsert(self):
+    def upsert(self) -> BulkUpsertOperation:
         """Specify that all chained update operations should be
         upserts.
 
@@ -380,7 +380,7 @@ class BulkOperationBuilder:
         """
         self.__bulk = Bulk(collection, ordered, bypass_document_validation)
 
-    def find(self, selector: dict):
+    def find(self, selector: dict) -> BulkWriteOperation:
         """Specify selection criteria for bulk operations.
 
         :Parameters:
@@ -394,7 +394,7 @@ class BulkOperationBuilder:
         validate_is_mapping('selector', selector)
         return BulkWriteOperation(selector, self.__bulk)
 
-    def insert(self, document: dict):
+    def insert(self, document: dict) -> None:
         """Insert a single document.
 
         :Parameters:
@@ -404,7 +404,7 @@ class BulkOperationBuilder:
         """
         self.__bulk.add_insert(document)
 
-    async def execute(self, write_concern: Optional[dict] = None):
+    async def execute(self, write_concern: Optional[dict] = None) -> dict:
         """Execute all provided operations.
 
         :Parameters:

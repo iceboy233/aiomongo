@@ -1441,7 +1441,7 @@ class Collection:
         connection = await self.database.client.get_connection()
         await connection.command(self.database.name, cmd, read_preference=ReadPreference.PRIMARY)
 
-    def initialize_unordered_bulk_op(self, bypass_document_validation: bool = False):
+    def initialize_unordered_bulk_op(self, bypass_document_validation: bool = False) -> BulkOperationBuilder:
         """Initialize an unordered batch of write operations.
 
         Operations will be performed on the server in arbitrary order,
@@ -1461,7 +1461,7 @@ class Collection:
         """
         return BulkOperationBuilder(self, False, bypass_document_validation)
 
-    def initialize_ordered_bulk_op(self, bypass_document_validation: bool = False):
+    def initialize_ordered_bulk_op(self, bypass_document_validation: bool = False) -> BulkOperationBuilder:
         """Initialize an ordered batch of write operations.
 
         Operations will be performed on the server serially, in the
@@ -1483,7 +1483,7 @@ class Collection:
         return BulkOperationBuilder(self, True, bypass_document_validation)
 
     async def bulk_write(self, requests: List[_WriteOp], ordered: bool = True,
-                         bypass_document_validation: bool = False):
+                         bypass_document_validation: bool = False) -> BulkWriteResult:
         """Send a batch of write operations to the server.
 
         Requests are passed as a list of write operation instances (
