@@ -74,18 +74,18 @@ class GridIn:
         object.__setattr__(self, '_closed', False)
         object.__setattr__(self, '_ensured_index', False)
 
-    async def __create_index(self, collection, index, unique):
+    async def __create_index(self, collection, index_key, unique):
         doc = await collection.find_one(projection={'_id': 1})
         if doc is None:
-            indexes = list()
+            index_keys = list()
             try:
                 async with await collection.list_indexes() as cursor:
-                    async for index in cursor:
-                        indexes.append(index)
+                    async for index_spec in cursor:
+                        index_keys.append(index_spec['key'])
             except OperationFailure:
                 pass
-            if index not in indexes:
-                await collection.create_index(index, unique=unique)
+            if index_key not in index_keys:
+                await collection.create_index(index_key.items(), unique=unique)
 
     async def __ensure_indexes(self):
         if not object.__getattribute__(self, '_ensured_index'):
@@ -462,7 +462,7 @@ class GridOut:
         self.__position = new_pos
         self.__buffer = EMPTY
 
-    async def __aiter__(self) -> 'GridOutIterator':
+    def __aiter__(self) -> 'GridOutIterator':
         """Return an iterator over all of this file's data.
 
         The iterator will return chunk-sized instances of
@@ -494,7 +494,7 @@ class GridOutIterator:
         self.__max_chunk = math.ceil(float(grid_out.length) /
                                      grid_out.chunk_size)
 
-    async def __aiter__(self) -> 'GridOutIterator':
+    def __aiter__(self) -> 'GridOutIterator':
         return self
 
     async def __anext__(self):
