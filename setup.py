@@ -10,7 +10,7 @@ tests_require = install_requires + ['pytest', 'pytest-asyncio'],
 
 setup(
     name='aiomongo',
-    version='0.1',
+    version='0.1.1',
     description='Asynchronous Python driver for MongoDB <http://www.mongodb.org>',
     author='Dmytro Domashevskyi',
     author_email='domash@zeoalliance.com',
