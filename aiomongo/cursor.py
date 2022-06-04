@@ -222,7 +222,8 @@ class Cursor:
                        self.__read_preference,
                        self.__limit,
                        self.__batch_size,
-                       self.__read_concern)
+                       self.__read_concern,
+                       None)
             )
         elif self.__id:
             if self.__limit:

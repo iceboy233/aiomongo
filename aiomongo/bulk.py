@@ -40,7 +40,7 @@ class Bulk:
             document['_id'] = ObjectId()
         self.ops.append((_INSERT, document))
 
-    def add_update(self, selector: dict, update: dict, multi: bool = False, upsert: bool = False) -> None:
+    def add_update(self, selector: dict, update: dict, multi: bool = False, upsert: bool = False, collation = None) -> None:
         """Create an update document and add it to the list of ops.
         """
         validate_ok_for_update(update)
@@ -48,7 +48,7 @@ class Bulk:
                    ('multi', multi), ('upsert', upsert)])
         self.ops.append((_UPDATE, cmd))
 
-    def add_replace(self, selector: dict, replacement: dict, upsert: bool=False) -> None:
+    def add_replace(self, selector: dict, replacement: dict, upsert: bool=False, collation = None) -> None:
         """Create a replace document and add it to the list of ops.
         """
         validate_ok_for_replace(replacement)
@@ -56,7 +56,7 @@ class Bulk:
                    ('multi', False), ('upsert', upsert)])
         self.ops.append((_UPDATE, cmd))
 
-    def add_delete(self, selector: dict, limit: int) -> None:
+    def add_delete(self, selector: dict, limit: int, collation = None) -> None:
         """Create a delete document and add it to the list of ops.
         """
         cmd = SON([('q', selector), ('limit', limit)])
